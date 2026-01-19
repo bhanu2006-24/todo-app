@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en" class="transition-colors duration-300">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskMaster Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            bg: '#0f172a',
+                            card: '#1e293b',
+                            text: '#f8fafc',
+                            muted: '#94a3b8',
+                            border: '#334155'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            transition: background 0.3s ease;
+        }
+
+        html.dark body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        }
+
+        /* Custom Checkbox */
+        .custom-checkbox input:checked + div {
+            background-color: #4f46e5;
+            border-color: #4f46e5;
+        }
+        .custom-checkbox input:checked + div svg {
+            display: block;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .task-item { animation: slideIn 0.3s ease-out forwards; }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        .pop-anim { animation: pop 0.2s ease-in-out; }
+
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+            opacity: 0.5;
+            transition: 0.2s;
+            filter: invert(0);
+        }
+        html.dark input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+        }
+
+        /* Modal Animation */
+        .modal-enter { opacity: 0; transform: scale(0.95); }
+        .modal-enter-active { opacity: 1; transform: scale(1); transition: all 0.2s ease-out; }
+        .modal-exit { opacity: 1; transform: scale(1); }
+        .modal-exit-active { opacity: 0; transform: scale(0.95); transition: all 0.2s ease-in; }
+    </style>
+</head>
+<body class="flex items-center justify-center p-4 sm:p-6 text-slate-800 dark:text-slate-100">
+
+    <!-- Main Container -->
+    <div class="bg-white/90 dark:bg-dark-card/90 backdrop-blur-xl w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[92vh] max-h-[900px] transition-colors duration-300 relative">
+        
+        <!-- Header Section -->
+        <div class="p-6 sm:px-8 sm:pt-8 sm:pb-6 bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 z-10 transition-colors duration-300">
+            
+            <!-- Top Bar: Title & Controls -->
+            <div class="flex justify-between items-start mb-6">
+                <div>
+                    <h1 class="text-3xl font-bold text-slate-800 dark:text-white tracking-tight flex items-center gap-2">
+                        TaskMaster <span class="text-indigo-500 text-sm font-semibold bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded-full border border-indigo-100 dark:border-indigo-800">Pro</span>
+                    </h1>
+                    <p id="date-display" class="text-slate-500 dark:text-slate-400 font-medium mt-1 text-sm"></p>
+                </div>
+
+                <div class="flex items-center gap-3">
+                     <!-- Analytics Button -->
+                     <button onclick="toggleAnalytics()" class="p-2 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors" title="View Stats">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                    </button>
+
+                    <!-- Theme Toggle -->
+                    <button onclick="toggleTheme()" class="p-2 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors" title="Toggle Theme">
+                        <svg id="sun-icon" class="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                        <svg id="moon-icon" class="w-5 h-5 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 24.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Focus Timer Widget (Expanded) -->
+            <div class="mb-6 bg-slate-50 dark:bg-slate-700/30 rounded-xl p-3 flex items-center justify-between border border-slate-100 dark:border-slate-700">
+                <div class="flex flex-col">
+                    <span class="text-[10px] uppercase tracking-wider font-bold text-slate-400 dark:text-slate-500 mb-0.5">Focus Timer</span>
+                    <div class="font-mono text-2xl font-bold text-slate-700 dark:text-slate-200 leading-none" id="timer-display">25:00</div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="flex gap-1 mr-2">
+                        <button onclick="setTimer(25)" class="text-[10px] px-2 py-1 rounded bg-white dark:bg-slate-600 shadow-sm hover:text-indigo-500 transition-colors">25m</button>
+                        <button onclick="setTimer(5)" class="text-[10px] px-2 py-1 rounded bg-white dark:bg-slate-600 shadow-sm hover:text-indigo-500 transition-colors">5m</button>
+                        <button onclick="setTimer(15)" class="text-[10px] px-2 py-1 rounded bg-white dark:bg-slate-600 shadow-sm hover:text-indigo-500 transition-colors">15m</button>
+                    </div>
+                    <button onclick="toggleTimer()" id="timer-btn" class="text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg transition-colors">Start</button>
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="space-y-3">
+                <div class="relative group">
+                    <input type="text" id="task-input" 
+                        class="w-full bg-slate-50 dark:bg-slate-700/50 border-2 border-slate-200 dark:border-slate-600 rounded-xl py-3.5 pl-4 pr-14 text-slate-700 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium"
+                        placeholder="Add a new task..."
+                    >
+                    <button id="add-btn" class="absolute right-2 top-2 bottom-2 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-lg px-3 transition-colors flex items-center justify-center shadow-lg shadow-indigo-200 dark:shadow-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- Controls Row -->
+                <div class="flex flex-wrap gap-2">
+                    <div class="relative flex-1 min-w-[100px]">
+                        <select id="category-input" class="w-full appearance-none bg-slate-50 dark:bg-slate-700/50 border-2 border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 text-slate-600 dark:text-slate-300 text-sm rounded-lg pl-3 pr-8 py-2 focus:outline-none focus:border-indigo-500 font-medium transition-colors">
+                            <option value="code">💻 Code</option>
+                            <option value="study">📚 Study</option>
+                            <option value="design">🎨 Design</option>
+                            <option value="work">💼 Work</option>
+                            <option value="personal">🏠 Personal</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-500"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div>
+                    </div>
+                    <div class="relative w-28">
+                        <select id="priority-input" class="w-full appearance-none bg-slate-50 dark:bg-slate-700/50 border-2 border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 text-slate-600 dark:text-slate-300 text-sm rounded-lg pl-3 pr-8 py-2 focus:outline-none focus:border-indigo-500 cursor-pointer font-medium transition-colors">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-500"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div>
+                    </div>
+                    <input type="date" id="date-input" class="w-auto bg-slate-50 dark:bg-slate-700/50 border-2 border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 text-slate-600 dark:text-slate-300 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-500 font-medium transition-colors">
+                </div>
+            </div>
+        </div>
+
+        <!-- Search & Filter Bar -->
+        <div class="px-6 py-3 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-700 flex gap-3 items-center">
+            <div class="relative flex-1">
+                <input type="text" id="search-filter" onkeyup="renderTasks()" placeholder="Search tasks..." class="w-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg pl-9 pr-3 py-1.5 text-sm focus:outline-none focus:border-indigo-500 dark:text-slate-200">
+                <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            </div>
+            <select id="category-filter" onchange="renderTasks()" class="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg px-2 py-1.5 text-sm text-slate-600 dark:text-slate-300 focus:outline-none focus:border-indigo-500">
+                <option value="all">All Tags</option>
+                <option value="code">Code</option>
+                <option value="study">Study</option>
+                <option value="design">Design</option>
+                <option value="work">Work</option>
+                <option value="personal">Personal</option>
+            </select>
+        </div>
+
+        <!-- Task List Header Tabs -->
+        <div class="px-8 pt-3 bg-slate-50/50 dark:bg-slate-800/50 flex space-x-4 border-b border-slate-100 dark:border-slate-700 text-sm font-medium">
+            <button onclick="filterTasks('all')" id="filter-all" class="filter-btn text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400 pb-2 px-1 transition-colors">All</button>
+            <button onclick="filterTasks('active')" id="filter-active" class="filter-btn text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 border-b-2 border-transparent pb-2 px-1 transition-colors">Active</button>
+            <button onclick="filterTasks('completed')" id="filter-completed" class="filter-btn text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 border-b-2 border-transparent pb-2 px-1 transition-colors">Completed</button>
+        </div>
+
+        <!-- Task List -->
+        <div class="flex-1 overflow-y-auto no-scrollbar p-6 bg-slate-50 dark:bg-slate-900/50 relative">
+            <ul id="task-list" class="space-y-3 pb-10">
+                <!-- Tasks injected here -->
+            </ul>
+            
+            <!-- Empty State -->
+            <div id="empty-state" class="hidden flex-col items-center justify-center h-full text-center text-slate-400 dark:text-slate-500 mt-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mb-4 text-slate-300 dark:text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                </svg>
+                <p class="text-lg font-medium text-slate-500 dark:text-slate-400">No tasks found</p>
+                <p class="text-sm">Adjust your filters or add a new task.</p>
+            </div>
+        </div>
+
+        <!-- Footer Info -->
+        <div class="bg-slate-50 dark:bg-slate-800 p-4 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center text-xs text-slate-400 dark:text-slate-500 transition-colors duration-300">
+            <span><span id="items-left">0 items left</span> • Double-click to edit</span>
+            <button onclick="clearCompleted()" class="text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors hover:underline">Clear Completed</button>
+        </div>
+
+        <!-- Analytics Modal -->
+        <div id="analytics-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <div class="bg-white dark:bg-slate-800 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden transform transition-all scale-95 opacity-0" id="analytics-content">
+                <div class="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
+                    <h2 class="text-xl font-bold text-slate-800 dark:text-white">Productivity Insights</h2>
+                    <button onclick="toggleAnalytics()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                <div class="p-6 space-y-6">
+                    <!-- Progress Stats -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-xl text-center">
+                            <div id="stat-total" class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">0</div>
+                            <div class="text-xs font-semibold text-indigo-800 dark:text-indigo-200 uppercase tracking-wide">Total Tasks</div>
+                        </div>
+                        <div class="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-xl text-center">
+                            <div id="stat-rate" class="text-3xl font-bold text-emerald-600 dark:text-emerald-400">0%</div>
+                            <div class="text-xs font-semibold text-emerald-800 dark:text-emerald-200 uppercase tracking-wide">Completion Rate</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Category Breakdown -->
+                    <div>
+                        <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 uppercase tracking-wide">Category Breakdown</h3>
+                        <div id="category-stats" class="space-y-3">
+                            <!-- Bars injected via JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- State Management ---
+        let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+        let currentFilter = 'all';
+        let isDarkMode = localStorage.getItem('theme') === 'dark';
+        
+        // Timer State
+        let timerInterval;
+        let timerSeconds = 25 * 60;
+        let isTimerRunning = false;
+
+        // --- DOM Elements ---
+        const taskInput = document.getElementById('task-input');
+        const priorityInput = document.getElementById('priority-input');
+        const categoryInput = document.getElementById('category-input');
+        const dateInput = document.getElementById('date-input');
+        const taskList = document.getElementById('task-list');
+        const dateDisplay = document.getElementById('date-display');
+        const emptyState = document.getElementById('empty-state');
+        const itemsLeftDisplay = document.getElementById('items-left');
+        const htmlEl = document.documentElement;
+        
+        // Search & Filter
+        const searchInput = document.getElementById('search-filter');
+        const categoryFilter = document.getElementById('category-filter');
+
+        // Analytics
+        const analyticsModal = document.getElementById('analytics-modal');
+        const analyticsContent = document.getElementById('analytics-content');
+
+        // --- Initialization ---
+        function init() {
+            const options = { weekday: 'long', month: 'long', day: 'numeric' };
+            dateDisplay.textContent = new Date().toLocaleDateString('en-US', options);
+            
+            if (isDarkMode) htmlEl.classList.add('dark');
+            else htmlEl.classList.remove('dark');
+
+            renderTasks();
+        }
+
+        // --- Theme ---
+        function toggleTheme() {
+            isDarkMode = !isDarkMode;
+            if (isDarkMode) {
+                htmlEl.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                htmlEl.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
+            }
+        }
+
+        // --- Timer Functions ---
+        function formatTime(seconds) {
+            const m = Math.floor(seconds / 60);
+            const s = seconds % 60;
+            return `${m}:${s < 10 ? '0' : ''}${s}`;
+        }
+
+        function setTimer(minutes) {
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+            timerSeconds = minutes * 60;
+            document.getElementById('timer-display').textContent = formatTime(timerSeconds);
+            const btn = document.getElementById('timer-btn');
+            btn.textContent = "Start";
+            btn.className = "text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg transition-colors";
+        }
+
+        function toggleTimer() {
+            const btn = document.getElementById('timer-btn');
+            const display = document.getElementById('timer-display');
+
+            if (isTimerRunning) {
+                clearInterval(timerInterval);
+                isTimerRunning = false;
+                btn.textContent = "Resume";
+                btn.className = "text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg transition-colors";
+            } else {
+                isTimerRunning = true;
+                btn.textContent = "Pause";
+                btn.className = "text-xs font-semibold bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg transition-colors";
+                
+                timerInterval = setInterval(() => {
+                    timerSeconds--;
+                    display.textContent = formatTime(timerSeconds);
+                    if (timerSeconds <= 0) {
+                        clearInterval(timerInterval);
+                        isTimerRunning = false;
+                        btn.textContent = "Start";
+                        btn.className = "text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg transition-colors";
+                        triggerConfetti();
+                        alert("Timer complete!");
+                    }
+                }, 1000);
+            }
+        }
+
+        // --- Analytics ---
+        function toggleAnalytics() {
+            const isHidden = analyticsModal.classList.contains('hidden');
+            if (isHidden) {
+                updateAnalytics();
+                analyticsModal.classList.remove('hidden');
+                setTimeout(() => {
+                    analyticsContent.classList.remove('scale-95', 'opacity-0');
+                    analyticsContent.classList.add('scale-100', 'opacity-100');
+                }, 10);
+            } else {
+                analyticsContent.classList.remove('scale-100', 'opacity-100');
+                analyticsContent.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => analyticsModal.classList.add('hidden'), 200);
+            }
+        }
+
+        function updateAnalytics() {
+            const total = tasks.length;
+            const completed = tasks.filter(t => t.completed).length;
+            const rate = total === 0 ? 0 : Math.round((completed / total) * 100);
+
+            document.getElementById('stat-total').textContent = total;
+            document.getElementById('stat-rate').textContent = `${rate}%`;
+
+            // Category breakdown
+            const categories = ['code', 'study', 'design', 'work', 'personal'];
+            const container = document.getElementById('category-stats');
+            container.innerHTML = '';
+
+            categories.forEach(cat => {
+                const catTasks = tasks.filter(t => t.category === cat);
+                if (catTasks.length === 0) return;
+
+                const catCompleted = catTasks.filter(t => t.completed).length;
+                const catTotal = catTasks.length;
+                const catRate = Math.round((catCompleted / catTotal) * 100);
+
+                const div = document.createElement('div');
+                div.innerHTML = `
+                    <div class="flex justify-between text-xs font-medium mb-1 text-slate-600 dark:text-slate-400">
+                        <span class="flex items-center gap-1">${getCategoryIcon(cat)} ${cat.charAt(0).toUpperCase() + cat.slice(1)}</span>
+                        <span>${catCompleted}/${catTotal}</span>
+                    </div>
+                    <div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2">
+                        <div class="bg-indigo-500 h-2 rounded-full transition-all duration-500" style="width: ${catRate}%"></div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // --- Core Functions ---
+
+        function addTask() {
+            const text = taskInput.value.trim();
+            if (text === '') return;
+
+            const priority = priorityInput.value;
+            const category = categoryInput.value;
+            const dueDate = dateInput.value;
+
+            const newTask = {
+                id: Date.now(),
+                text: text,
+                completed: false,
+                priority: priority,
+                category: category,
+                dueDate: dueDate,
+                createdAt: new Date().toISOString()
+            };
+
+            tasks.unshift(newTask);
+            saveAndRender();
+            
+            taskInput.value = '';
+            taskInput.focus();
+        }
+
+        function toggleTask(id) {
+            tasks = tasks.map(task => 
+                task.id === id ? { ...task, completed: !task.completed } : task
+            );
+            
+            const task = tasks.find(t => t.id === id);
+            if (task && task.completed) {
+                // If it's a high priority task or list is empty, big confetti. Otherwise small.
+                if (task.priority === 'high') triggerConfetti(); 
+            }
+
+            saveAndRender();
+            
+            const row = document.getElementById(`task-${id}`);
+            if(row) {
+                row.classList.add('pop-anim');
+                setTimeout(() => row.classList.remove('pop-anim'), 200);
+            }
+        }
+
+        function triggerConfetti() {
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
+        }
+
+        function deleteTask(id) {
+            tasks = tasks.filter(task => task.id !== id);
+            saveAndRender();
+        }
+
+        function clearCompleted() {
+            tasks = tasks.filter(task => !task.completed);
+            triggerConfetti();
+            saveAndRender();
+        }
+
+        function updateTaskText(id, newText) {
+            const text = newText.trim();
+            if (text === '') return;
+            tasks = tasks.map(task => task.id === id ? { ...task, text: text } : task);
+            saveAndRender();
+        }
+
+        function filterTasks(filterType) {
+            currentFilter = filterType;
+            
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.className = 'filter-btn text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 border-b-2 border-transparent pb-2 px-1 transition-colors';
+            });
+            const activeBtn = document.getElementById(`filter-${filterType}`);
+            activeBtn.className = 'filter-btn text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400 pb-2 px-1 transition-colors';
+
+            renderTasks();
+        }
+
+        function saveAndRender() {
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+            renderTasks();
+        }
+
+        function getCategoryIcon(category) {
+            switch(category) {
+                case 'code': return '💻';
+                case 'study': return '📚';
+                case 'design': return '🎨';
+                case 'work': return '💼';
+                case 'personal': return '🏠';
+                default: return '📝';
+            }
+        }
+
+        function renderTasks() {
+            taskList.innerHTML = '';
+            
+            let filtered = tasks;
+
+            // 1. Status Filter
+            if (currentFilter === 'active') filtered = filtered.filter(t => !t.completed);
+            else if (currentFilter === 'completed') filtered = filtered.filter(t => t.completed);
+
+            // 2. Search Filter
+            const searchTerm = searchInput.value.toLowerCase();
+            if (searchTerm) {
+                filtered = filtered.filter(t => t.text.toLowerCase().includes(searchTerm));
+            }
+
+            // 3. Category Filter
+            const catFilter = categoryFilter.value;
+            if (catFilter !== 'all') {
+                filtered = filtered.filter(t => t.category === catFilter);
+            }
+
+            // 4. Sort: High priority first, then normal. Completed last.
+            filtered.sort((a, b) => {
+                if (a.completed !== b.completed) return a.completed ? 1 : -1;
+                const pMap = { high: 0, medium: 1, low: 2 };
+                return pMap[a.priority] - pMap[b.priority];
+            });
+
+            // Update Header Counts
+            const totalActive = tasks.filter(t => !t.completed).length;
+            itemsLeftDisplay.textContent = `${totalActive} item${totalActive !== 1 ? 's' : ''} left`;
+
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+            } else {
+                emptyState.classList.add('hidden');
+                emptyState.classList.remove('flex');
+            }
+
+            filtered.forEach(task => {
+                const li = document.createElement('li');
+                li.id = `task-${task.id}`;
+                
+                let priorityClass = '';
+                if (task.priority === 'high') priorityClass = 'bg-red-50 text-red-600 border-red-100 dark:bg-red-900/20 dark:text-red-400 dark:border-red-900/30';
+                else if (task.priority === 'medium') priorityClass = 'bg-orange-50 text-orange-600 border-orange-100 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-900/30';
+                else priorityClass = 'bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-900/30';
+
+                let dateHtml = '';
+                if (task.dueDate) {
+                    const dateObj = new Date(task.dueDate);
+                    const dateString = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    const isToday = new Date().toISOString().split('T')[0] === task.dueDate;
+                    const displayDate = isToday ? 'Today' : dateString;
+                    const dateColor = isToday ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500';
+
+                    dateHtml = `
+                        <div class="flex items-center text-xs ${dateColor} font-medium mt-1">
+                            <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            ${displayDate}
+                        </div>
+                    `;
+                }
+
+                li.className = `task-item bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 flex items-center justify-between group transition-all duration-200 hover:shadow-md hover:border-indigo-100 dark:hover:border-slate-600 ${task.completed ? 'bg-slate-50 dark:bg-slate-800/50' : ''}`;
+                
+                li.innerHTML = `
+                    <div class="flex items-center flex-1 min-w-0 gap-4">
+                        <label class="custom-checkbox relative flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only" ${task.completed ? 'checked' : ''} onchange="toggleTask(${task.id})">
+                            <div class="w-6 h-6 border-2 border-slate-300 dark:border-slate-500 rounded-full transition-colors flex items-center justify-center bg-white dark:bg-slate-700 group-hover:border-indigo-400">
+                                <svg class="w-3.5 h-3.5 text-white hidden pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                            </div>
+                        </label>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 mb-0.5 flex-wrap">
+                                <span class="text-xs px-2 py-0.5 rounded-md border font-semibold ${priorityClass} ${task.completed ? 'opacity-50' : ''}">
+                                    ${task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+                                </span>
+                                <span class="text-xs px-2 py-0.5 rounded-md border bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600 ${task.completed ? 'opacity-50' : ''}">
+                                    ${getCategoryIcon(task.category)} ${task.category.charAt(0).toUpperCase() + task.category.slice(1)}
+                                </span>
+                            </div>
+                            <div class="flex items-center mt-1">
+                                <span class="text-base font-medium truncate cursor-text transition-all duration-200 ${task.completed ? 'text-slate-400 dark:text-slate-500 line-through' : 'text-slate-700 dark:text-slate-200'}" 
+                                      ondblclick="makeEditable(this, ${task.id})" title="Double click to edit">
+                                    ${escapeHtml(task.text)}
+                                </span>
+                            </div>
+                            ${dateHtml}
+                        </div>
+                    </div>
+                    
+                    <button onclick="deleteTask(${task.id})" class="text-slate-400 hover:text-red-500 dark:hover:text-red-400 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100" aria-label="Delete">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </button>
+                `;
+                taskList.appendChild(li);
+            });
+        }
+
+        // --- Utility ---
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function makeEditable(element, id) {
+            if (element.querySelector('input')) return; 
+            
+            const currentText = element.textContent.trim();
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = currentText;
+            input.className = 'w-full bg-transparent border-b-2 border-indigo-500 focus:outline-none text-slate-700 dark:text-slate-200 font-medium px-1';
+            
+            const save = () => {
+                if (input.value.trim() !== currentText) {
+                    updateTaskText(id, input.value);
+                } else {
+                    renderTasks(); 
+                }
+            };
+
+            input.addEventListener('blur', save);
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') input.blur();
+            });
+
+            element.innerHTML = '';
+            element.appendChild(input);
+            input.focus();
+        }
+
+        // --- Event Listeners ---
+        document.getElementById('add-btn').addEventListener('click', addTask);
+        taskInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') addTask();
+        });
+
+        init();
+    </script>
+</body>
+</html>
