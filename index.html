@@ -19,6 +19,15 @@
                             muted: '#94a3b8',
                             border: '#334155'
                         }
+                    },
+                    animation: {
+                        'fadeIn': 'fadeIn 0.2s ease-out forwards',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(-5px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
                     }
                 }
             }
@@ -61,6 +70,13 @@
             100% { transform: scale(1); }
         }
         .pop-anim { animation: pop 0.2s ease-in-out; }
+        
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(79, 70, 229, 0); }
+            100% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
+        }
+        .recording { animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite; }
 
         input[type="date"]::-webkit-calendar-picker-indicator {
             cursor: pointer;
@@ -71,12 +87,6 @@
         html.dark input[type="date"]::-webkit-calendar-picker-indicator {
             filter: invert(1);
         }
-
-        /* Modal Animation */
-        .modal-enter { opacity: 0; transform: scale(0.95); }
-        .modal-enter-active { opacity: 1; transform: scale(1); transition: all 0.2s ease-out; }
-        .modal-exit { opacity: 1; transform: scale(1); }
-        .modal-exit-active { opacity: 0; transform: scale(0.95); transition: all 0.2s ease-in; }
     </style>
 </head>
 <body class="flex items-center justify-center p-4 sm:p-6 text-slate-800 dark:text-slate-100">
@@ -96,7 +106,21 @@
                     <p id="date-display" class="text-slate-500 dark:text-slate-400 font-medium mt-1 text-sm"></p>
                 </div>
 
-                <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2">
+                     <!-- Data Options -->
+                     <div class="relative group z-50">
+                        <button class="p-2 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path></svg>
+                        </button>
+                        <div class="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-100 dark:border-slate-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-right">
+                            <button onclick="exportData()" class="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 first:rounded-t-lg">Export Data</button>
+                            <label class="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer block last:rounded-b-lg">
+                                Import Data
+                                <input type="file" class="hidden" onchange="importData(this)" accept=".json">
+                            </label>
+                        </div>
+                     </div>
+
                      <!-- Analytics Button -->
                      <button onclick="toggleAnalytics()" class="p-2 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors" title="View Stats">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -106,13 +130,27 @@
 
                     <!-- Theme Toggle -->
                     <button onclick="toggleTheme()" class="p-2 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors" title="Toggle Theme">
-                        <svg id="sun-icon" class="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-                        <svg id="moon-icon" class="w-5 h-5 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 24.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                        <!-- Sun Icon -->
+                        <svg id="sun-icon" class="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <line x1="12" y1="1" x2="12" y2="3"></line>
+                            <line x1="12" y1="21" x2="12" y2="23"></line>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                            <line x1="1" y1="12" x2="3" y2="12"></line>
+                            <line x1="21" y1="12" x2="23" y2="12"></line>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                        </svg>
+                        <!-- New Moon Icon -->
+                        <svg id="moon-icon" class="w-5 h-5 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
                     </button>
                 </div>
             </div>
 
-            <!-- Focus Timer Widget (Expanded) -->
+            <!-- Focus Timer Widget -->
             <div class="mb-6 bg-slate-50 dark:bg-slate-700/30 rounded-xl p-3 flex items-center justify-between border border-slate-100 dark:border-slate-700">
                 <div class="flex flex-col">
                     <span class="text-[10px] uppercase tracking-wider font-bold text-slate-400 dark:text-slate-500 mb-0.5">Focus Timer</span>
@@ -132,37 +170,56 @@
             <div class="space-y-3">
                 <div class="relative group">
                     <input type="text" id="task-input" 
-                        class="w-full bg-slate-50 dark:bg-slate-700/50 border-2 border-slate-200 dark:border-slate-600 rounded-xl py-3.5 pl-4 pr-14 text-slate-700 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium"
-                        placeholder="Add a new task..."
+                        class="w-full bg-slate-50 dark:bg-slate-700/50 border-2 border-slate-200 dark:border-slate-600 rounded-xl py-3.5 pl-4 pr-24 text-slate-700 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium"
+                        placeholder="What needs to be done?"
                     >
-                    <button id="add-btn" class="absolute right-2 top-2 bottom-2 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-lg px-3 transition-colors flex items-center justify-center shadow-lg shadow-indigo-200 dark:shadow-none">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                        </svg>
-                    </button>
+                    <div class="absolute right-2 top-2 bottom-2 flex gap-1">
+                        <!-- Voice Input Btn -->
+                        <button onclick="startVoiceInput()" id="voice-btn" class="text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors" title="Speak to add">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+                        </button>
+                        <!-- Add Btn -->
+                        <button id="add-btn" class="bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-lg px-3 transition-colors flex items-center justify-center shadow-lg shadow-indigo-200 dark:shadow-none">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
                 
                 <!-- Controls Row -->
-                <div class="flex flex-wrap gap-2">
-                    <div class="relative flex-1 min-w-[100px]">
-                        <select id="category-input" class="w-full appearance-none bg-slate-50 dark:bg-slate-700/50 border-2 border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 text-slate-600 dark:text-slate-300 text-sm rounded-lg pl-3 pr-8 py-2 focus:outline-none focus:border-indigo-500 font-medium transition-colors">
-                            <option value="code">💻 Code</option>
-                            <option value="study">📚 Study</option>
-                            <option value="design">🎨 Design</option>
-                            <option value="work">💼 Work</option>
-                            <option value="personal">🏠 Personal</option>
-                        </select>
-                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-500"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div>
+                <div class="flex flex-col gap-2">
+                    <div class="flex flex-wrap gap-2">
+                        <div class="relative flex-1 min-w-[100px]">
+                            <select id="category-input" class="w-full appearance-none bg-slate-50 dark:bg-slate-700/50 border-2 border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 text-slate-600 dark:text-slate-300 text-sm rounded-lg pl-3 pr-8 py-2 focus:outline-none focus:border-indigo-500 font-medium transition-colors">
+                                <option value="code">💻 Code</option>
+                                <option value="study">📚 Study</option>
+                                <option value="design">🎨 Design</option>
+                                <option value="work">💼 Work</option>
+                                <option value="personal">🏠 Personal</option>
+                            </select>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-500"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div>
+                        </div>
+                        <div class="relative w-28">
+                            <select id="priority-input" class="w-full appearance-none bg-slate-50 dark:bg-slate-700/50 border-2 border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 text-slate-600 dark:text-slate-300 text-sm rounded-lg pl-3 pr-8 py-2 focus:outline-none focus:border-indigo-500 cursor-pointer font-medium transition-colors">
+                                <option value="low">Low</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="high">High</option>
+                            </select>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-500"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div>
+                        </div>
+                        <input type="date" id="date-input" class="w-auto bg-slate-50 dark:bg-slate-700/50 border-2 border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 text-slate-600 dark:text-slate-300 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-500 font-medium transition-colors">
+                        
+                        <!-- Add Note Button -->
+                        <button onclick="toggleNoteInput()" id="note-toggle-btn" class="bg-slate-50 dark:bg-slate-700/50 border-2 border-slate-200 dark:border-slate-600 hover:border-indigo-500 dark:hover:border-indigo-400 text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-300 rounded-lg px-3 py-2 transition-colors flex items-center justify-center" title="Add Note">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                        </button>
                     </div>
-                    <div class="relative w-28">
-                        <select id="priority-input" class="w-full appearance-none bg-slate-50 dark:bg-slate-700/50 border-2 border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 text-slate-600 dark:text-slate-300 text-sm rounded-lg pl-3 pr-8 py-2 focus:outline-none focus:border-indigo-500 cursor-pointer font-medium transition-colors">
-                            <option value="low">Low</option>
-                            <option value="medium" selected>Medium</option>
-                            <option value="high">High</option>
-                        </select>
-                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-500"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div>
-                    </div>
-                    <input type="date" id="date-input" class="w-auto bg-slate-50 dark:bg-slate-700/50 border-2 border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 text-slate-600 dark:text-slate-300 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-500 font-medium transition-colors">
+
+                    <!-- Hidden Note Input -->
+                    <textarea id="task-note-input" class="hidden w-full bg-slate-50 dark:bg-slate-700/50 border-2 border-slate-200 dark:border-slate-600 rounded-xl p-3 text-sm text-slate-700 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-all font-medium resize-none h-20" placeholder="Add detailed notes here..."></textarea>
                 </div>
             </div>
         </div>
@@ -252,6 +309,7 @@
         let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
         let currentFilter = 'all';
         let isDarkMode = localStorage.getItem('theme') === 'dark';
+        let expandedTasks = new Set(); // Track expanded task IDs
         
         // Timer State
         let timerInterval;
@@ -260,6 +318,7 @@
 
         // --- DOM Elements ---
         const taskInput = document.getElementById('task-input');
+        const taskNoteInput = document.getElementById('task-note-input');
         const priorityInput = document.getElementById('priority-input');
         const categoryInput = document.getElementById('category-input');
         const dateInput = document.getElementById('date-input');
@@ -285,10 +344,128 @@
             if (isDarkMode) htmlEl.classList.add('dark');
             else htmlEl.classList.remove('dark');
 
+            // Data Migration (add subtasks array if missing)
+            tasks = tasks.map(t => ({...t, subtasks: t.subtasks || []}));
+
             renderTasks();
         }
 
-        // --- Theme ---
+        // --- Voice Input ---
+        function startVoiceInput() {
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                alert("Voice input is not supported in this browser. Try Chrome.");
+                return;
+            }
+            
+            const btn = document.getElementById('voice-btn');
+            btn.classList.add('recording', 'text-red-500');
+            
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'en-US';
+            recognition.interimResults = false;
+            
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                taskInput.value = transcript;
+                taskInput.focus();
+                btn.classList.remove('recording', 'text-red-500');
+            };
+            
+            recognition.onerror = () => {
+                btn.classList.remove('recording', 'text-red-500');
+            };
+            
+            recognition.onend = () => {
+                btn.classList.remove('recording', 'text-red-500');
+            };
+            
+            recognition.start();
+        }
+
+        // --- Subtasks ---
+        function addSubtask(taskId, text) {
+            if (!text.trim()) return;
+            const task = tasks.find(t => t.id === taskId);
+            if (task) {
+                task.subtasks.push({
+                    id: Date.now(),
+                    text: text.trim(),
+                    completed: false
+                });
+                saveAndRender();
+            }
+        }
+
+        function toggleSubtask(taskId, subtaskId) {
+            const task = tasks.find(t => t.id === taskId);
+            if (task) {
+                const sub = task.subtasks.find(s => s.id === subtaskId);
+                if (sub) {
+                    sub.completed = !sub.completed;
+                    saveAndRender();
+                }
+            }
+        }
+
+        function deleteSubtask(taskId, subtaskId) {
+            const task = tasks.find(t => t.id === taskId);
+            if (task) {
+                task.subtasks = task.subtasks.filter(s => s.id !== subtaskId);
+                saveAndRender();
+            }
+        }
+
+        // --- Data Import/Export ---
+        function exportData() {
+            const dataStr = JSON.stringify(tasks, null, 2);
+            const blob = new Blob([dataStr], {type: "application/json"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `taskmaster_backup_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function importData(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (Array.isArray(imported)) {
+                        if(confirm(`Replace current list with ${imported.length} tasks?`)) {
+                            tasks = imported;
+                            saveAndRender();
+                        }
+                    } else {
+                        alert("Invalid file format");
+                    }
+                } catch (err) {
+                    alert("Error reading file");
+                }
+            };
+            reader.readAsText(file);
+            input.value = ''; // Reset
+        }
+
+        // --- UI Functions ---
+        function toggleNoteInput() {
+            taskNoteInput.classList.toggle('hidden');
+            const btn = document.getElementById('note-toggle-btn');
+            if (taskNoteInput.classList.contains('hidden')) {
+                btn.classList.remove('border-indigo-500', 'text-indigo-600', 'bg-indigo-50');
+                btn.classList.add('bg-slate-50', 'text-slate-500');
+            } else {
+                taskNoteInput.focus();
+                btn.classList.add('border-indigo-500', 'text-indigo-600', 'bg-indigo-50');
+                btn.classList.remove('bg-slate-50', 'text-slate-500');
+            }
+        }
+
         function toggleTheme() {
             isDarkMode = !isDarkMode;
             if (isDarkMode) {
@@ -371,7 +548,6 @@
             document.getElementById('stat-total').textContent = total;
             document.getElementById('stat-rate').textContent = `${rate}%`;
 
-            // Category breakdown
             const categories = ['code', 'study', 'design', 'work', 'personal'];
             const container = document.getElementById('category-stats');
             container.innerHTML = '';
@@ -407,14 +583,17 @@
             const priority = priorityInput.value;
             const category = categoryInput.value;
             const dueDate = dateInput.value;
+            const note = taskNoteInput.value.trim();
 
             const newTask = {
                 id: Date.now(),
                 text: text,
+                note: note,
                 completed: false,
                 priority: priority,
                 category: category,
                 dueDate: dueDate,
+                subtasks: [],
                 createdAt: new Date().toISOString()
             };
 
@@ -422,6 +601,9 @@
             saveAndRender();
             
             taskInput.value = '';
+            taskNoteInput.value = '';
+            taskNoteInput.classList.add('hidden');
+            document.getElementById('note-toggle-btn').classList.remove('border-indigo-500', 'text-indigo-600', 'bg-indigo-50');
             taskInput.focus();
         }
 
@@ -432,7 +614,6 @@
             
             const task = tasks.find(t => t.id === id);
             if (task && task.completed) {
-                // If it's a high priority task or list is empty, big confetti. Otherwise small.
                 if (task.priority === 'high') triggerConfetti(); 
             }
 
@@ -445,6 +626,20 @@
             }
         }
 
+        function toggleTaskDetails(id) {
+            if (expandedTasks.has(id)) {
+                expandedTasks.delete(id);
+            } else {
+                expandedTasks.add(id);
+            }
+            renderTasks();
+        }
+
+        function updateTaskNote(id, newNote) {
+            tasks = tasks.map(task => task.id === id ? { ...task, note: newNote } : task);
+            saveAndRender();
+        }
+
         function triggerConfetti() {
             confetti({
                 particleCount: 100,
@@ -455,6 +650,7 @@
 
         function deleteTask(id) {
             tasks = tasks.filter(task => task.id !== id);
+            expandedTasks.delete(id);
             saveAndRender();
         }
 
@@ -504,30 +700,25 @@
             
             let filtered = tasks;
 
-            // 1. Status Filter
             if (currentFilter === 'active') filtered = filtered.filter(t => !t.completed);
             else if (currentFilter === 'completed') filtered = filtered.filter(t => t.completed);
 
-            // 2. Search Filter
             const searchTerm = searchInput.value.toLowerCase();
             if (searchTerm) {
                 filtered = filtered.filter(t => t.text.toLowerCase().includes(searchTerm));
             }
 
-            // 3. Category Filter
             const catFilter = categoryFilter.value;
             if (catFilter !== 'all') {
                 filtered = filtered.filter(t => t.category === catFilter);
             }
 
-            // 4. Sort: High priority first, then normal. Completed last.
             filtered.sort((a, b) => {
                 if (a.completed !== b.completed) return a.completed ? 1 : -1;
                 const pMap = { high: 0, medium: 1, low: 2 };
                 return pMap[a.priority] - pMap[b.priority];
             });
 
-            // Update Header Counts
             const totalActive = tasks.filter(t => !t.completed).length;
             itemsLeftDisplay.textContent = `${totalActive} item${totalActive !== 1 ? 's' : ''} left`;
 
@@ -564,40 +755,93 @@
                     `;
                 }
 
-                li.className = `task-item bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 flex items-center justify-between group transition-all duration-200 hover:shadow-md hover:border-indigo-100 dark:hover:border-slate-600 ${task.completed ? 'bg-slate-50 dark:bg-slate-800/50' : ''}`;
+                const isExpanded = expandedTasks.has(task.id);
+                const hasNote = task.note && task.note.trim().length > 0;
+                const expandIconRotation = isExpanded ? 'rotate-180' : '';
+                
+                // Subtasks HTML construction
+                const subtasks = task.subtasks || [];
+                const completedSubtasks = subtasks.filter(s => s.completed).length;
+                const subtaskProgress = subtasks.length > 0 ? `${completedSubtasks}/${subtasks.length}` : '';
+                const subtaskHtml = subtasks.map(s => `
+                    <li class="flex items-center gap-2 group/sub">
+                        <input type="checkbox" ${s.completed ? 'checked' : ''} onchange="toggleSubtask(${task.id}, ${s.id})" class="accent-indigo-500 rounded w-4 h-4 cursor-pointer">
+                        <span class="text-sm flex-1 ${s.completed ? 'text-slate-400 line-through' : 'text-slate-600 dark:text-slate-300'}">${escapeHtml(s.text)}</span>
+                        <button onclick="deleteSubtask(${task.id}, ${s.id})" class="text-slate-400 hover:text-red-500 opacity-0 group-hover/sub:opacity-100 transition-opacity p-1"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                    </li>
+                `).join('');
+
+                li.className = `task-item bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 group transition-all duration-200 hover:shadow-md hover:border-indigo-100 dark:hover:border-slate-600 ${task.completed ? 'bg-slate-50 dark:bg-slate-800/50' : ''}`;
                 
                 li.innerHTML = `
-                    <div class="flex items-center flex-1 min-w-0 gap-4">
-                        <label class="custom-checkbox relative flex items-center cursor-pointer">
-                            <input type="checkbox" class="sr-only" ${task.completed ? 'checked' : ''} onchange="toggleTask(${task.id})">
-                            <div class="w-6 h-6 border-2 border-slate-300 dark:border-slate-500 rounded-full transition-colors flex items-center justify-center bg-white dark:bg-slate-700 group-hover:border-indigo-400">
-                                <svg class="w-3.5 h-3.5 text-white hidden pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                    <div class="flex items-start justify-between">
+                        <div class="flex items-start flex-1 min-w-0 gap-4">
+                            <label class="custom-checkbox relative flex items-center cursor-pointer mt-0.5">
+                                <input type="checkbox" class="sr-only" ${task.completed ? 'checked' : ''} onchange="toggleTask(${task.id})">
+                                <div class="w-6 h-6 border-2 border-slate-300 dark:border-slate-500 rounded-full transition-colors flex items-center justify-center bg-white dark:bg-slate-700 group-hover:border-indigo-400">
+                                    <svg class="w-3.5 h-3.5 text-white hidden pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                                </div>
+                            </label>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2 mb-0.5 flex-wrap">
+                                    <span class="text-xs px-2 py-0.5 rounded-md border font-semibold ${priorityClass} ${task.completed ? 'opacity-50' : ''}">
+                                        ${task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+                                    </span>
+                                    <span class="text-xs px-2 py-0.5 rounded-md border bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600 ${task.completed ? 'opacity-50' : ''}">
+                                        ${getCategoryIcon(task.category)} ${task.category.charAt(0).toUpperCase() + task.category.slice(1)}
+                                    </span>
+                                    ${hasNote ? `<span class="text-xs text-indigo-500 dark:text-indigo-400 flex items-center" title="Has note"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/></svg></span>` : ''}
+                                    ${subtasks.length > 0 ? `<span class="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-0.5" title="Subtasks"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg> ${subtaskProgress}</span>` : ''}
+                                </div>
+                                <div class="flex items-center mt-1">
+                                    <span class="text-base font-medium truncate cursor-text transition-all duration-200 ${task.completed ? 'text-slate-400 dark:text-slate-500 line-through' : 'text-slate-700 dark:text-slate-200'}" 
+                                          ondblclick="makeEditable(this, ${task.id})" title="Double click to edit">
+                                        ${escapeHtml(task.text)}
+                                    </span>
+                                </div>
+                                ${dateHtml}
                             </div>
-                        </label>
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-center gap-2 mb-0.5 flex-wrap">
-                                <span class="text-xs px-2 py-0.5 rounded-md border font-semibold ${priorityClass} ${task.completed ? 'opacity-50' : ''}">
-                                    ${task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-                                </span>
-                                <span class="text-xs px-2 py-0.5 rounded-md border bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600 ${task.completed ? 'opacity-50' : ''}">
-                                    ${getCategoryIcon(task.category)} ${task.category.charAt(0).toUpperCase() + task.category.slice(1)}
-                                </span>
-                            </div>
-                            <div class="flex items-center mt-1">
-                                <span class="text-base font-medium truncate cursor-text transition-all duration-200 ${task.completed ? 'text-slate-400 dark:text-slate-500 line-through' : 'text-slate-700 dark:text-slate-200'}" 
-                                      ondblclick="makeEditable(this, ${task.id})" title="Double click to edit">
-                                    ${escapeHtml(task.text)}
-                                </span>
-                            </div>
-                            ${dateHtml}
+                        </div>
+                        
+                        <div class="flex items-center gap-1">
+                             <button onclick="toggleTaskDetails(${task.id})" class="text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-all">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transform transition-transform duration-200 ${expandIconRotation}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                            <button onclick="deleteTask(${task.id})" class="text-slate-400 hover:text-red-500 dark:hover:text-red-400 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100" aria-label="Delete">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
                         </div>
                     </div>
-                    
-                    <button onclick="deleteTask(${task.id})" class="text-slate-400 hover:text-red-500 dark:hover:text-red-400 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100" aria-label="Delete">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                    </button>
+
+                    <div class="${isExpanded ? 'block' : 'hidden'} mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 animate-fadeIn">
+                        
+                        <!-- Subtasks Section -->
+                        <div class="mb-4">
+                            <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Subtasks</h4>
+                            <ul class="space-y-2 mb-2" id="sublist-${task.id}">
+                                ${subtaskHtml}
+                            </ul>
+                            <div class="flex gap-2">
+                                <input type="text" placeholder="Add step..." 
+                                    class="text-sm flex-1 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-md px-2 py-1.5 focus:outline-none focus:border-indigo-500 dark:text-slate-200"
+                                    onkeydown="if(event.key === 'Enter') { addSubtask(${task.id}, this.value); this.value = ''; }">
+                            </div>
+                        </div>
+
+                        <!-- Notes Section -->
+                        <div>
+                            <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Notes</h4>
+                            <textarea 
+                                onblur="updateTaskNote(${task.id}, this.value)" 
+                                class="w-full bg-slate-50 dark:bg-slate-900/50 rounded-lg p-3 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none h-20 placeholder-slate-400 dark:placeholder-slate-600" 
+                                placeholder="Add notes..."
+                            >${task.note || ''}</textarea>
+                        </div>
+                    </div>
                 `;
                 taskList.appendChild(li);
             });
@@ -605,6 +849,7 @@
 
         // --- Utility ---
         function escapeHtml(text) {
+            if(!text) return '';
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
